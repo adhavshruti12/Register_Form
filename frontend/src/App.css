@@ -1,0 +1,197 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Prevent padding/border affecting width */
+  font-family: 'Arial', sans-serif;
+}
+
+body {
+  background-color: rgba(0, 0, 0, 0.164);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 20px;
+}
+
+/* Form Container - Common Styles */
+.form-container {
+ 
+  border-radius: 25px;
+  box-shadow: 0 4px 8px rgba(219, 77, 235, 0.1);
+  padding: 30px;
+  width: 100%;
+  max-width: 400px;
+  min-width: 350px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: all 0.3s ease;
+  border:3px solid #70acf1;
+}
+
+.form-container:hover {
+  background-color: white; /* Darker background on hover */
+  box-shadow: 0 6px 12px rgba(219, 77, 235, 0.2); /* Enhanced shadow effect */
+  transform: scale(1.05); /* Slightly scale up the container */
+}
+
+/* Registration Form Container */
+.registration-form-container {
+  min-height: 550px; /* Adjust for additional fields in registration form */
+}
+
+/* Login Form Container */
+.login-form-container {
+  min-height: 450px; /* Adjust for fewer fields in login form */
+}
+
+/* Form Header */
+h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+/* Labels */
+label {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 8px;
+  text-align: left;
+  display: block;
+  margin-top: 10px;
+}
+
+/* Input Fields */
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%; /* Ensures inputs span full width of form */
+  padding: 12px;
+  border-radius: 6px;
+  border: 2px solid #70acf1;
+  margin-bottom: 15px; /* Consistent margin between fields */
+  font-size: 14px;
+  box-sizing: border-box; /* Ensures padding/border are part of width */
+  transition: border-color 0.3s ease;
+  background-color: transparent;
+  height: 40px;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: #6c63ff;
+  box-shadow: 0 0 5px rgba(108, 99, 255, 0.5);
+}
+
+input[type="file"] {
+  display: block;
+  padding: 8px;
+  font-size: 14px;
+  color: #555;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+}
+
+
+/* Password Strength and Match Messages */
+.password-strength,
+.password-match {
+  font-size: 12px;
+  margin-top: 5px;
+  margin-bottom: 15px; /* Space below the message */
+  color: #888;
+}
+
+.password-strength {
+  color: #888;
+}
+
+.password-match {
+  color: #888;
+}
+
+.password-match.correct {
+  color: green;
+}
+
+.password-match.incorrect {
+  color: red;
+}
+
+/* Buttons */
+button {
+  margin-top: 10px;
+  width: 100%; /* Ensure button spans full width of form */
+  padding: 12px;
+  background-color: #3d33fb;
+  border: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #5a54d8;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Success and Error Messages */
+.success-message {
+  background-color: #e6fffb;
+  color: #52c41a;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+  word-wrap: break-word;
+}
+
+.error-message {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+  word-wrap: break-word;
+}
+
+/* Links */
+a {
+  
+  color: #6c63ff;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 480px) {
+  .form-container {
+    padding: 20px;
+    max-width: 90%;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  button {
+    font-size: 14px;
+  }
+}
