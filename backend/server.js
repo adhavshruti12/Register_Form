@@ -12,21 +12,32 @@ const User = require('./models/User');
 // Initialize Express app
 const app = express();
 
-// Middleware for CORS
-app.use(cors({ origin: '*', methods: ['GET', 'POST'], credentials: true }));
+// CORS Middleware
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  methods: ['GET', 'POST'],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 app.options('*', cors());
 
 // Parse JSON Request Body
 app.use(bodyParser.json());
 
-// MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch((err) => console.error('Error connecting to MongoDB:', err.message));
+// MongoDB Connection with Retry
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('Connected to MongoDB Atlas');
+  } catch (err) {
+    console.error('Error connecting to MongoDB:', err.message);
+    setTimeout(connectDB, 5000); // Retry after 5 seconds
+  }
+};
+connectDB();
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -44,17 +55,22 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and JPG are allowed.'));
+    } else {
+      cb(null, true);
+    }
+  },
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB limit
+});
 
-// Media Upload Endpoint
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded' });
-  }
-  res.status(200).json({
-    message: 'File uploaded successfully',
-    url: req.file.path,
-  });
+// Health Check Endpoint
+app.get('/api/ping', (req, res) => {
+  res.json({ message: 'Server is running and reachable!' });
 });
 
 // Registration Endpoint
@@ -121,12 +137,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Health Check Route
-app.get('/', (req, res) => {
-  res.send('Backend is working!');
-});
-
-// Server Setup
+// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
