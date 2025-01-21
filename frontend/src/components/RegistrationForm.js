@@ -19,7 +19,7 @@ const RegistrationForm = () => {
 
   const backendURL =
     process.env.NODE_ENV === 'production'
-      ? 'https://your-vercel-backend.vercel.app/api'
+      ? 'https://register-form-api-plum.vercel.app/api'
       : 'http://localhost:5000/api';
 
   const checkPasswordStrength = (password) => {
