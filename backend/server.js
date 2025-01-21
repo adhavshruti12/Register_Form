@@ -12,32 +12,30 @@ const User = require('./models/User');
 // Initialize Express app
 const app = express();
 
-// CORS Middleware
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST'],
-  credentials: true,
-};
-app.use(cors(corsOptions));
+// Middleware for CORS: Allow all origins for both local and production environments
+app.use(
+  cors({
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
+
+// Preflight handling
 app.options('*', cors());
 
 // Parse JSON Request Body
 app.use(bodyParser.json());
 
-// MongoDB Connection with Retry
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('Connected to MongoDB Atlas');
-  } catch (err) {
-    console.error('Error connecting to MongoDB:', err.message);
-    setTimeout(connectDB, 5000); // Retry after 5 seconds
-  }
-};
-connectDB();
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch((err) => console.error('Error connecting to MongoDB:', err.message));
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -50,27 +48,24 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'uploads',
-    allowed_formats: ['jpg', 'png', 'jpeg'],
+    folder: 'uploads', // Cloudinary folder name
+    allowed_formats: ['jpg', 'png', 'jpeg'], // Allowed file formats
   },
 });
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      cb(new Error('Invalid file type. Only JPEG, PNG, and JPG are allowed.'));
-    } else {
-      cb(null, true);
-    }
-  },
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB limit
-});
+const upload = multer({ storage });
 
-// Health Check Endpoint
-app.get('/api/ping', (req, res) => {
-  res.json({ message: 'Server is running and reachable!' });
+// Media Upload Endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  try {
+    res.status(200).json({
+      message: 'File uploaded successfully',
+      url: req.file.path,
+    });
+  } catch (error) {
+    console.error('Error during file upload:', error);
+    res.status(500).json({ message: 'File upload failed' });
+  }
 });
 
 // Registration Endpoint
@@ -79,10 +74,6 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
 
   if (!name || !email || !password || !confirmPassword || !req.file) {
     return res.status(400).json({ message: 'All fields, including an image, are required' });
-  }
-
-  if (password !== confirmPassword) {
-    return res.status(400).json({ message: 'Passwords do not match' });
   }
 
   try {
@@ -97,10 +88,11 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      imageUrl: req.file.path,
+      imageUrl: req.file.path, // Store Cloudinary image URL
     });
 
     await newUser.save();
+
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error('Error during registration:', error);
@@ -108,36 +100,47 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
   }
 });
 
+
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
+  // Validate input
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
   try {
+    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found. Please register first.' });
     }
 
+    // Check password match
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password. Please try again.' });
     }
 
+    // Send successful response
     res.status(200).json({
       name: user.name,
       message: 'Login successful',
     });
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error. Please try again later.' });
   }
 });
 
-// Start Server
+
+// Health Check Route
+app.get('/', (req, res) => {
+  res.send('Backend is working!');
+});
+
+// Server Setup
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
