@@ -12,17 +12,8 @@ const User = require('./models/User');
 // Initialize Express app
 const app = express();
 
-// Middleware for CORS: Allow all origins for both local and production environments
-app.use(
-  cors({
-    origin: '*', // Allow all origins
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  })
-);
-
-// Preflight handling
+// Middleware for CORS
+app.use(cors({ origin: '*', methods: ['GET', 'POST'], credentials: true }));
 app.options('*', cors());
 
 // Parse JSON Request Body
@@ -48,8 +39,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'uploads', // Cloudinary folder name
-    allowed_formats: ['jpg', 'png', 'jpeg'], // Allowed file formats
+    folder: 'uploads',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
   },
 });
 
@@ -57,15 +48,13 @@ const upload = multer({ storage });
 
 // Media Upload Endpoint
 app.post('/api/upload', upload.single('file'), (req, res) => {
-  try {
-    res.status(200).json({
-      message: 'File uploaded successfully',
-      url: req.file.path,
-    });
-  } catch (error) {
-    console.error('Error during file upload:', error);
-    res.status(500).json({ message: 'File upload failed' });
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
   }
+  res.status(200).json({
+    message: 'File uploaded successfully',
+    url: req.file.path,
+  });
 });
 
 // Registration Endpoint
@@ -74,6 +63,10 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
 
   if (!name || !email || !password || !confirmPassword || !req.file) {
     return res.status(400).json({ message: 'All fields, including an image, are required' });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match' });
   }
 
   try {
@@ -88,11 +81,10 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      imageUrl: req.file.path, // Store Cloudinary image URL
+      imageUrl: req.file.path,
     });
 
     await newUser.save();
-
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error('Error during registration:', error);
@@ -100,40 +92,34 @@ app.post('/api/register', upload.single('image'), async (req, res) => {
   }
 });
 
-
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
-  // Validate input
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
   try {
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found. Please register first.' });
     }
 
-    // Check password match
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password. Please try again.' });
     }
 
-    // Send successful response
     res.status(200).json({
       name: user.name,
       message: 'Login successful',
     });
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ message: 'Internal server error. Please try again later.' });
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 // Health Check Route
 app.get('/', (req, res) => {
