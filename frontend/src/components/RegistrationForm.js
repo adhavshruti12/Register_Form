@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import validator from 'validator';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,14 @@ const RegistrationForm = () => {
     process.env.NODE_ENV === 'production'
       ? 'https://register-form-api-plum.vercel.app/api'
       : 'http://localhost:5000/api';
+
+  // Debug API reachability
+  useEffect(() => {
+    axios
+      .get(`${backendURL}/ping`)
+      .then(() => console.log('API is reachable'))
+      .catch(() => console.error('API is not reachable'));
+  }, [backendURL]);
 
   const checkPasswordStrength = (password) => {
     let strengthMessage = '';
@@ -59,48 +67,51 @@ const RegistrationForm = () => {
       setImage(file);
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
+    // Basic validation
     if (!validator.isEmail(email)) {
       setError('Please enter a valid email address');
       return;
     }
-  
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-  
+
     if (passwordStrength !== 'Password is strong') {
       setError('Please ensure your password meets the strength requirements');
       return;
     }
-  
+
     if (!image) {
       setError('Please upload an image');
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
       const formData = new FormData();
       formData.append('name', name);
       formData.append('email', email);
       formData.append('password', password);
-      formData.append('confirmPassword', confirmPassword);
       formData.append('image', image);
-  
-      console.log([...formData]); // Debugging: Log formData content
-  
+
+      // Debugging: Log FormData content
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+
       const response = await axios.post(`${backendURL}/register`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
       setSuccessMessage(response.data.message);
       setError('');
       setName('');
@@ -110,14 +121,13 @@ const RegistrationForm = () => {
       setImage(null);
       navigate('/login');
     } catch (err) {
-      console.error(err.response); // Log error for debugging
+      console.error('Error:', err.response || err.message || err);
       setError(err.response?.data?.message || 'An error occurred');
       setSuccessMessage('');
     } finally {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="form-container">
